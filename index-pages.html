@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anticheat Dashboard</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #161922;
+    --border: #2a2d34;
+    --text: #e6e6e6;
+    --muted: #9aa0aa;
+    --dim: #6c7280;
+    --themis: #6fb1ff;
+    --grim: #ff9f6f;
+    --totemguard: #9fd88a;
+    --action: #ff6f6f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 1.5rem 2rem 2rem;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  h1 { font-size: 1.4rem; margin: 0; }
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.25rem;
+  }
+  .tab-btn {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.45rem 0.9rem;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { background: #262a35; color: var(--text); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  input[type="search"], input[type="password"], input[type="text"] {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+  }
+  input[type="search"] { flex: 1; max-width: 320px; }
+  input::placeholder { color: var(--dim); }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #4caf50;
+    display: inline-block;
+    margin-right: 0.35rem;
+    box-shadow: 0 0 0 0 rgba(76,175,80,0.6);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(76,175,80,0.5); }
+    70% { box-shadow: 0 0 0 6px rgba(76,175,80,0); }
+    100% { box-shadow: 0 0 0 0 rgba(76,175,80,0); }
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+  th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--bg); }
+  tbody tr:hover { background: #171a22; }
+
+  .src-Themis { color: var(--themis); }
+  .src-Grim { color: var(--grim); }
+  .src-TotemGuard { color: var(--totemguard); }
+  .action-yes { color: var(--action); font-weight: 600; }
+  .action-no { color: var(--dim); }
+
+  .user-row { cursor: pointer; }
+  .user-row td:first-child { font-weight: 600; }
+  .badge {
+    display: inline-block;
+    min-width: 1.6rem;
+    text-align: center;
+    padding: 0.1rem 0.4rem;
+    border-radius: 10px;
+    background: #262a35;
+    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .badge.punish { background: rgba(255,111,111,0.15); color: var(--action); }
+
+  .history-row td { background: #10131a; padding: 0; }
+  .history-row table { margin: 0.25rem 0.5rem 0.75rem; width: calc(100% - 1rem); }
+  .history-row th, .history-row td { font-size: 0.82rem; padding: 0.4rem 0.6rem; }
+  .empty { color: var(--dim); padding: 2rem 0; text-align: center; font-size: 0.9rem; }
+  .chevron { display: inline-block; width: 0.7rem; transition: transform 0.15s ease; color: var(--dim); }
+  .chevron.open { transform: rotate(90deg); }
+
+  /* ---- login gate ---- */
+  #gate {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+  #gate-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+  }
+  #gate-box h2 { margin: 0 0 0.25rem; font-size: 1.1rem; }
+  #gate-box p { color: var(--muted); font-size: 0.82rem; margin: 0 0 1rem; }
+  #gate-box input { width: 100%; margin-bottom: 0.75rem; padding: 0.55rem 0.7rem; }
+  #gate-box button {
+    width: 100%;
+    background: #2f6f4f;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.55rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #gate-box button:hover { background: #357d59; }
+  #gate-error { color: var(--action); font-size: 0.8rem; margin-top: 0.6rem; min-height: 1em; }
+  #app { display: none; }
+</style>
+</head>
+<body>
+
+  <div id="gate">
+    <div id="gate-box">
+      <h2>Anticheat Dashboard</h2>
+      <p>Enter the access key to continue.</p>
+      <input type="password" id="gate-key" placeholder="Access key" autocomplete="off">
+      <button id="gate-submit">Unlock</button>
+      <div id="gate-error"></div>
+    </div>
+  </div>
+
+  <div id="app">
+    <header>
+      <h1>Anticheat Dashboard</h1>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="live">Live</button>
+        <button class="tab-btn" data-tab="users">Users</button>
+      </div>
+    </header>
+
+    <section id="panel-live" class="panel active">
+      <div class="toolbar">
+        <span><span class="live-dot"></span>updating every 5s</span>
+        <input type="search" id="live-filter" placeholder="Filter by player or check…">
+      </div>
+      <table>
+        <thead>
+          <tr><th>Time</th><th>Player</th><th>Source</th><th>Check</th><th>Score</th><th>Action</th><th>Details</th></tr>
+        </thead>
+        <tbody id="live-rows"></tbody>
+      </table>
+      <div id="live-empty" class="empty" style="display:none;">No offenses logged yet.</div>
+    </section>
+
+    <section id="panel-users" class="panel">
+      <div class="toolbar">
+        <input type="search" id="users-filter" placeholder="Filter by player name…">
+        <span id="users-count"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:1.5rem;"></th>
+            <th>Player</th>
+            <th>Total Offenses</th>
+            <th>Punishments</th>
+            <th>First Seen</th>
+            <th>Last Offense</th>
+          </tr>
+        </thead>
+        <tbody id="users-rows"></tbody>
+      </table>
+      <div id="users-empty" class="empty" style="display:none;">No players have been flagged yet.</div>
+    </section>
+  </div>
+
+<script>
+// ============================================================
+// CONFIG - point this at your deployed Worker's URL.
+// ============================================================
+const WORKER_URL = "https://acdash-worker.YOUR-SUBDOMAIN.workers.dev";
+
+// ---------- auth gate ----------
+// The access key is kept in sessionStorage only (cleared when the tab
+// closes) rather than localStorage, so it doesn't persist indefinitely
+// on a shared/public machine. Every fetch to the Worker sends it as
+// X-API-Key; the Worker rejects anything that doesn't match, so a wrong
+// or missing key just results in 401s rather than exposing data.
+function getKey() { return sessionStorage.getItem('acdash-key') || ''; }
+function setKey(k) { sessionStorage.setItem('acdash-key', k); }
+
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(WORKER_URL + path, {
+    ...opts,
+    headers: { ...(opts.headers || {}), 'X-API-Key': getKey() },
+  });
+  if (res.status === 401) {
+    sessionStorage.removeItem('acdash-key');
+    showGate('Access key rejected. Try again.');
+    throw new Error('unauthorized');
+  }
+  return res;
+}
+
+function showGate(error) {
+  document.getElementById('gate').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('gate-error').textContent = error || '';
+}
+
+function showApp() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  bootApp();
+}
+
+async function tryUnlock() {
+  const key = document.getElementById('gate-key').value.trim();
+  if (!key) return;
+  setKey(key);
+  try {
+    // Cheapest authenticated call just to validate the key before showing the app.
+    const res = await fetch(WORKER_URL + '/api/users', { headers: { 'X-API-Key': key } });
+    if (res.status === 401) {
+      sessionStorage.removeItem('acdash-key');
+      document.getElementById('gate-error').textContent = 'Wrong key. Try again.';
+      return;
+    }
+    if (!res.ok) {
+      document.getElementById('gate-error').textContent = 'Could not reach the dashboard API.';
+      return;
+    }
+    showApp();
+  } catch (e) {
+    document.getElementById('gate-error').textContent = 'Could not reach ' + WORKER_URL;
+  }
+}
+
+document.getElementById('gate-submit').addEventListener('click', tryUnlock);
+document.getElementById('gate-key').addEventListener('keydown', e => {
+  if (e.key === 'Enter') tryUnlock();
+});
+
+// If a key is already stashed from earlier this session, skip straight to validating it.
+if (getKey()) {
+  tryUnlock();
+} else {
+  showGate();
+}
+
+// ============================================================
+// App (only runs after a valid key unlocks the gate)
+// ============================================================
+let appBooted = false;
+function bootApp() {
+  if (appBooted) return;
+  appBooted = true;
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'users') loadUsers();
+    });
+  });
+
+  document.getElementById('live-filter').addEventListener('input', renderLive);
+  document.getElementById('users-filter').addEventListener('input', renderUsers);
+
+  loadLive();
+  setInterval(loadLive, 5000);
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[c]);
+}
+
+// ---------- Live tab ----------
+let liveData = [];
+
+function renderLive() {
+  const filter = document.getElementById('live-filter').value.trim().toLowerCase();
+  const rows = document.getElementById('live-rows');
+  const filtered = filter
+    ? liveData.filter(o =>
+        o.playerName.toLowerCase().includes(filter) ||
+        o.checkName.toLowerCase().includes(filter) ||
+        o.source.toLowerCase().includes(filter))
+    : liveData;
+
+  document.getElementById('live-empty').style.display = filtered.length ? 'none' : 'block';
+
+  rows.innerHTML = filtered.map(o => `
+    <tr>
+      <td>${new Date(o.timestamp).toLocaleString()}</td>
+      <td>${escapeHtml(o.playerName)}</td>
+      <td class="src-${o.source}">${o.source}</td>
+      <td>${escapeHtml(o.checkName)}</td>
+      <td>${o.violationScore.toFixed(1)}</td>
+      <td class="${o.actionTaken ? 'action-yes' : 'action-no'}">${o.actionTaken ? 'YES' : '-'}</td>
+      <td>${escapeHtml(o.details ?? '')}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadLive() {
+  try {
+    const res = await apiFetch('/api/offenses?limit=200');
+    liveData = await res.json();
+    renderLive();
+  } catch (e) {
+    console.error('Failed to load offenses', e);
+  }
+}
+
+// ---------- Users tab ----------
+let usersData = [];
+const openHistories = new Set();
+
+function renderUsers() {
+  const filter = document.getElementById('users-filter').value.trim().toLowerCase();
+  const tbody = document.getElementById('users-rows');
+  const filtered = filter
+    ? usersData.filter(u => u.playerName.toLowerCase().includes(filter))
+    : usersData;
+
+  document.getElementById('users-empty').style.display = filtered.length ? 'none' : 'block';
+  document.getElementById('users-count').textContent = filtered.length + ' player' + (filtered.length === 1 ? '' : 's');
+
+  tbody.innerHTML = filtered.map(u => `
+    <tr class="user-row" data-uuid="${u.playerUuid}">
+      <td><span class="chevron ${openHistories.has(u.playerUuid) ? 'open' : ''}">&#9656;</span></td>
+      <td>${escapeHtml(u.playerName)}</td>
+      <td><span class="badge">${u.totalOffenses}</span></td>
+      <td><span class="badge ${u.totalPunishments > 0 ? 'punish' : ''}">${u.totalPunishments}</span></td>
+      <td>${new Date(u.firstOffenseAt).toLocaleDateString()}</td>
+      <td>${new Date(u.lastOffenseAt).toLocaleString()}</td>
+    </tr>
+    <tr class="history-row" id="history-${u.playerUuid}" style="display:${openHistories.has(u.playerUuid) ? 'table-row' : 'none'};">
+      <td colspan="6"></td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('.user-row').forEach(row => {
+    row.addEventListener('click', () => toggleHistory(row.dataset.uuid));
+  });
+
+  openHistories.forEach(uuid => {
+    const cell = document.querySelector('#history-' + uuid + ' td');
+    if (cell && !cell.dataset.loaded) fillHistory(uuid, cell);
+  });
+}
+
+async function toggleHistory(uuid) {
+  const historyRow = document.getElementById('history-' + uuid);
+  const cell = historyRow.querySelector('td');
+  const chevron = document.querySelector(`.user-row[data-uuid="${uuid}"] .chevron`);
+
+  if (openHistories.has(uuid)) {
+    openHistories.delete(uuid);
+    historyRow.style.display = 'none';
+    chevron.classList.remove('open');
+    return;
+  }
+
+  openHistories.add(uuid);
+  historyRow.style.display = 'table-row';
+  chevron.classList.add('open');
+  if (!cell.dataset.loaded) await fillHistory(uuid, cell);
+}
+
+async function fillHistory(uuid, cell) {
+  cell.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const res = await apiFetch('/api/users/' + uuid);
+    const offenses = await res.json();
+    cell.dataset.loaded = 'true';
+    if (!offenses.length) {
+      cell.innerHTML = '<div class="empty">No offense history.</div>';
+      return;
+    }
+    cell.innerHTML = `
+      <table>
+        <thead>
+          <tr><th>Time</th><th>Source</th><th>Check</th><th>Score</th><th>Action</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+          ${offenses.map(o => `
+            <tr>
+              <td>${new Date(o.timestamp).toLocaleString()}</td>
+              <td class="src-${o.source}">${o.source}</td>
+              <td>${escapeHtml(o.checkName)}</td>
+              <td>${o.violationScore.toFixed(1)}</td>
+              <td class="${o.actionTaken ? 'action-yes' : 'action-no'}">${o.actionTaken ? 'YES' : '-'}</td>
+              <td>${escapeHtml(o.details ?? '')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (e) {
+    cell.innerHTML = '<div class="empty">Failed to load history.</div>';
+    console.error('Failed to load user history', e);
+  }
+}
+
+async function loadUsers() {
+  try {
+    const res = await apiFetch('/api/users');
+    usersData = await res.json();
+    renderUsers();
+  } catch (e) {
+    console.error('Failed to load users', e);
+  }
+}
+</script>
+</body>
+</html>
