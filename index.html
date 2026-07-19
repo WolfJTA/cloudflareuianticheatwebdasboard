@@ -270,12 +270,21 @@ async function tryUnlock() {
       return;
     }
     if (!res.ok) {
-      document.getElementById('gate-error').textContent = 'Could not reach the dashboard API.';
+      // Try to parse the { error: "..." } JSON returned by worker.js
+      let errorDetails = `HTTP ${res.status}`;
+      try {
+        const body = await res.json();
+        if (body.error) errorDetails += `: ${body.error}`;
+      } catch (parseErr) {
+        errorDetails += ` (${res.statusText || 'Server Error'})`;
+      }
+      document.getElementById('gate-error').textContent = `API Error [${errorDetails}]`;
       return;
     }
     showApp();
   } catch (e) {
-    document.getElementById('gate-error').textContent = 'Could not reach ' + WORKER_URL;
+    // Captures network failures, CORS blocks, or offline issues
+    document.getElementById('gate-error').textContent = `Connection failed: Could not reach ${WORKER_URL} (${e.message})`;
   }
 }
 
